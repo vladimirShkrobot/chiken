@@ -1,60 +1,50 @@
 "use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 const canvas = document.querySelector('#myCanvas');
 const ctx = canvas.getContext('2d');
 class GameMap {
-    constructor({ Character }) {
+    constructor({ character }) {
         this.mobs = [];
-        this.Character = new Character({
-            img: './images/character.png',
-            position: {
-                x: canvas.width / 2,
-                y: canvas.height / 2
-            },
-            Weapon: Gun,
-            mobs: this.mobs
-        });
-        ;
+        this.character = character;
         this.spawnCharacter();
-        document.addEventListener('keydown', (event) => {
-            this.Character.move(event.key);
-            if (event.key === 'x') {
-                this.Character.attack();
-            }
-        });
     }
     spawnCharacter() {
-        this.Character.texture.onload = () => {
-            ctx.drawImage(this.Character.texture, this.Character.position.x, this.Character.position.y);
+        this.character.texture.onload = () => {
+            ctx.drawImage(this.character.texture, this.character.position.x, this.character.position.y);
         };
     }
-    spawnMob(Mob, position) {
-        const mob = new Mob({
-            position: {
-                x: position.x || 900,
-                y: position.y || 900
-            },
-            enemy: this.Character,
-            speed: 1,
-        });
+    spawnMob(mob) {
         this.mobs.push(mob);
         mob.texture.onload = () => {
             ctx.drawImage(mob.texture, mob.position.x, mob.position.y);
-            mob.move();
+            mob.move(this.character);
         };
+    }
+    killMob(index) {
+        const [mob] = this.mobs.splice(index, 1);
+        mob.die();
     }
 }
 class Character {
-    constructor({ position, img, Weapon, mobs }) {
+    constructor({ position, img, weapon }) {
         this.position = position;
         this.texture = new Image();
         this.texture.src = img;
-        this.mobs = mobs;
-        this.weapon = new Weapon({ range: 50, dmg: 17, mobs });
+        this.weapon = weapon;
         this.attacking = false;
         this.died = false;
         this.drawWeapon();
+        this.weapon.position = { x: this.position.x + 50, y: this.position.y };
     }
-    drawWeapon() {
+    drawWeapon(type, characteristics) {
         this.weapon.texture.onload = () => {
             ctx.drawImage(this.weapon.texture, this.position.x + 50, this.position.y);
         };
@@ -88,92 +78,23 @@ class Character {
             return;
         }
         ctx.drawImage(this.texture, this.position.x, this.position.y);
+        this.weapon.position = { x: this.position.x + 50, y: this.position.y };
         ctx.drawImage(this.weapon.texture, this.position.x + 50, this.position.y);
     }
-    attack() {
-        if (this.died) {
-            return;
-        }
-        this.weapon.attack({ x: this.position.x + 50, y: this.position.y });
-        // this.attacking = true
-        // ctx.save();
-        // ctx.translate(this.position.x + 50, this.position.y);
-        // ctx.rotate(Math.PI / 4);
-        // ctx.translate(-this.position.x + 50, -this.position.y);
-        // ctx.clearRect(0, 0, canvas.width, canvas.height);
-        // ctx.drawImage(this.texture, this.position.x, this.position.y);
-        // ctx.drawImage(this.weapon.texture, this.position.x + 50, this.position.y);
-        // ctx.restore();
-        // setTimeout(() => {
-        //   ctx.clearRect(0, 0, canvas.width, canvas.height);
-        //   ctx.drawImage(this.texture, this.position.x, this.position.y);
-        //   ctx.drawImage(this.weapon.texture, this.position.x + 50, this.position.y)
-        //   this.attacking = false
-        // }, 250)
+    attack(mobs) {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (!this.died) {
+                return yield this.weapon.attack(mobs);
+            }
+            return Promise.resolve(false);
+        });
     }
     changeWeapon(weapon) {
     }
 }
-class Weapon {
-    constructor({ dmg, range, mobs }) {
-        this.dmg = dmg;
-        this.range = range;
-        this.texture = new Image();
-        this.mobs = mobs;
-    }
-}
-class Sword extends Weapon {
-    attack() {
-    }
-}
-class Gun extends Weapon {
-    constructor({ dmg, range, mobs }) {
-        super({ dmg, range, mobs });
-        this.texture.src = './images/gun.png';
-    }
-    attack({ x: xP, y: yP }) {
-        let x = xP + 150;
-        const y = yP + 10;
-        const speed = 2;
-        // Функция для рисования шарика
-        function drawBall() {
-            ctx.clearRect(x + speed - 50, y - 20, 40, 40); // Очистить холст
-            ctx.beginPath();
-            ctx.arc(x, y, 20, 0, Math.PI * 2);
-            ctx.fillStyle = 'blue';
-            ctx.fill();
-            ctx.closePath();
-        }
-        // Функция анимации
-        const animate = () => {
-            x += speed; // Увеличиваем координату x на значение скорости
-            drawBall(); // Рисуем шарик
-            const damagedMobIndex = this.mobs.findIndex(({ position, texture }) => {
-                const halfOfMobWidth = texture.width / 2;
-                const halfOfMobHeight = texture.height / 2;
-                return (position.x - halfOfMobWidth < x && position.x + halfOfMobWidth > x) && (position.y - halfOfMobHeight < y && position.y + halfOfMobHeight + 40 > y);
-            });
-            if (damagedMobIndex > -1) {
-                const [damagedMob] = this.mobs.splice(damagedMobIndex, 1);
-                damagedMob.die();
-                ctx.clearRect(x + speed - 22, y - 20, 40, 40);
-                return;
-            }
-            if (canvas.width > x || 0 > canvas.width) {
-                requestAnimationFrame(animate);
-            }
-            else {
-                ctx.clearRect(x + speed - 40, y - 20, 40, 40);
-            }
-        };
-        // Запускаем анимацию
-        animate();
-    }
-}
 class Mob {
-    constructor({ position, enemy, speed }) {
+    constructor({ position, speed }) {
         this.position = position;
-        this.enemy = enemy;
         this.speed = speed;
         this.texture = new Image();
         this.died = false;
@@ -181,20 +102,20 @@ class Mob {
     die() {
         this.died = true;
     }
-    move() {
+    move(enemy) {
         const drawMob = () => {
             // ctx.clearRect(this.position.x + this.speed, this.position.y, 80, 53); // Очистить холст
             ctx.drawImage(this.texture, this.position.x, this.position.y);
         };
         const animate = () => {
             ctx.clearRect(this.position.x + this.speed - 10, this.position.y, 110, 53);
-            if (this.enemy.position.x < this.position.x) {
+            if (enemy.position.x < this.position.x) {
                 this.position.x -= this.speed;
             }
             else {
                 this.position.x += this.speed;
             }
-            if (this.enemy.position.y < this.position.y) {
+            if (enemy.position.y < this.position.y) {
                 this.position.y -= this.speed;
             }
             else {
@@ -202,8 +123,8 @@ class Mob {
             }
             const halfOfMobWidth = this.texture.width / 2;
             const halfOfMobHeight = this.texture.height / 2;
-            if ((this.enemy.position.x - halfOfMobWidth < this.position.x && this.enemy.position.x + halfOfMobWidth > this.position.x) && (this.enemy.position.y - halfOfMobHeight < this.position.y && this.enemy.position.y + halfOfMobHeight > this.position.y)) {
-                this.enemy.die();
+            if ((enemy.position.x - halfOfMobWidth < this.position.x && enemy.position.x + halfOfMobWidth > this.position.x) && (enemy.position.y - halfOfMobHeight < this.position.y && enemy.position.y + halfOfMobHeight > this.position.y)) {
+                enemy.die();
             }
             drawMob();
             if (!this.died) {
@@ -219,17 +140,49 @@ class Mob {
     }
 }
 class Fish extends Mob {
-    constructor({ position, enemy, speed }) {
-        super({ position, enemy, speed });
+    constructor({ position, speed }) {
+        super({ position, speed });
         this.texture.src = './images/fish.jpg';
     }
 }
-const mainMap = new GameMap({ Character });
-// mainMap.spawnMob(Fish, { x: 1800, y: Math.floor(Math.random() * 1081) });
+// class MobFactory {
+//   static list = {
+//     fish: Fish
+//   }
+//   create(type, fields) {
+//   }
+// }
+const gun = new Gun({ range: 50, dmg: 17 });
+const character = new Character({
+    img: './images/character.png',
+    position: {
+        x: canvas.width / 2,
+        y: canvas.height / 2
+    },
+    weapon: gun,
+});
+const mainMap = new GameMap({ character });
+document.addEventListener('keydown', (event) => __awaiter(void 0, void 0, void 0, function* () {
+    character.move(event.key);
+    if (event.key === 'x') {
+        const mob = yield character.attack(mainMap.mobs);
+        if (mob) {
+            const [_, mobInded] = mob;
+            mainMap.killMob(mobInded);
+        }
+    }
+}));
 let spawnTime = 3000;
 setInterval(() => {
     spawnTime = spawnTime - spawnTime / 10;
 }, 10000);
 setInterval(() => {
-    mainMap.spawnMob(Fish, { x: Math.floor(Math.random() * (1920 - 960 + 1)) + 960, y: Math.floor(Math.random() * 1081) });
+    const mob = new Fish({
+        position: {
+            x: Math.floor(Math.random() * (1920 - 960 + 1)) + 960,
+            y: Math.floor(Math.random() * 1081)
+        },
+        speed: 1,
+    });
+    mainMap.spawnMob(mob);
 }, spawnTime);
