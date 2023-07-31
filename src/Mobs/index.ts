@@ -1,5 +1,6 @@
 import { Character } from "../Characters";
 import { IPosition } from "../interfaces";
+import { getRandomNumber } from "../utils";
 import { IMob, IMobCharacteristics } from "./interface";
 
 const canvas: HTMLCanvasElement = document.querySelector('#myCanvas')!;
@@ -13,14 +14,20 @@ export abstract class Mob implements IMob {
   died: boolean
   type: keyof typeof MobFactory.list
   hp: number
+  drop: {
+    bullets: number
+  }
 
-  constructor({ position, speed, type }: IMobCharacteristics) {
+  constructor({ position, speed, type, drop }: IMobCharacteristics) {
     this.position = position;
     this.speed = speed;
     this.texture = new Image();
     this.died = false
     this.type = type
     this.hp = 1;
+    this.drop = drop || {
+      bullets: 0
+    }
   }
 
   die() {
@@ -69,6 +76,9 @@ export class Fish extends Mob {
   constructor(characteristics: IMobCharacteristics) {
     super(characteristics);
     this.texture.src = './images/fish.png';
+    this.drop = {
+      bullets: 1
+    }
   }
 }
 
@@ -79,6 +89,9 @@ export class Chestnut extends Mob {
     super(characteristics);
     this.texture.src = './images/chestnut.png';
     this.hp = 100;
+    this.drop = {
+      bullets: 7
+    }
   }
 }
 
@@ -110,5 +123,26 @@ export class MobFactory {
     const partialCharacteristics: Partial<IMobCharacteristics> = characteristics;
     partialCharacteristics.type = mobNames[randomMobIndex] as keyof typeof MobFactory.list;
     return new MobFactory.list[partialCharacteristics.type](partialCharacteristics as IMobCharacteristics);
+  }
+
+  createRandomWithRandomPosition(characteristics: Omit<IMobCharacteristics, 'type' | 'position'>) {
+    const partialCharacteristics: Partial<IMobCharacteristics> = characteristics;
+    partialCharacteristics.position = this.calculateRandomBehindScreenPosition();
+    const randomMob = this.createRandom(partialCharacteristics as Omit<IMobCharacteristics, 'type'>);
+    return randomMob;
+  }
+
+  private calculateRandomBehindScreenPosition() {
+    if (getRandomNumber(0, 1)) {
+      return {
+        x: getRandomNumber(-100, window.innerWidth + 100),
+        y: getRandomNumber(0, 1) ? -100 : window.innerHeight + 100
+      }
+    } else {
+      return {
+        x: getRandomNumber(0, 1) ? -100 : window.innerWidth + 100,
+        y: getRandomNumber(-100, window.innerHeight + 100)
+      }
+    }
   }
 }

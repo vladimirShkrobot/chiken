@@ -1,6 +1,6 @@
 import { Mob } from "../Mobs";
 import { IPosition } from "../interfaces";
-import { IWeapon, IWeaponCharacteristics, IWeaponCharacteristicsWithPosition } from "./interface";
+import { IGun, IWeapon, IWeaponCharacteristics, IWeaponCharacteristicsWithPosition } from "./interface";
 
 const canvas: HTMLCanvasElement = document.querySelector('#myCanvas')!;
 const ctx: CanvasRenderingContext2D = canvas.getContext('2d')!;
@@ -29,12 +29,14 @@ abstract class Weapon implements IWeapon {
 //   }
 // }
 
-export class Gun extends Weapon {
+export class Gun extends Weapon implements IGun {
   bullet: { texture: HTMLImageElement }
+  bulletCount: number
 
   constructor(weaponCharacteristics: IWeaponCharacteristics) {
     super(weaponCharacteristics);
     this.texture.src = './images/gun.png';
+    this.bulletCount = 7;
     this.bullet = {
       texture: new Image()
     }
@@ -43,6 +45,9 @@ export class Gun extends Weapon {
 
   attack(mobs: Mob[]) {
     return new Promise<false | [Mob, number]>(resolve => {
+      if (!this.bulletCount) {
+        return Promise.resolve(false);
+      }
       let x = this.position.x + 150;
       const y = this.position.y - 5;
       const speed = 2;
@@ -56,7 +61,7 @@ export class Gun extends Weapon {
         // ctx.closePath();
         ctx.clearRect(x + speed - 50, y - 10, 40, 40);
         ctx.drawImage(this.bullet.texture, x, y);
-        
+
       }
 
       const animate = () => {
@@ -81,6 +86,7 @@ export class Gun extends Weapon {
       }
 
       animate();
+      this.bulletCount--;
     })
   }
 }

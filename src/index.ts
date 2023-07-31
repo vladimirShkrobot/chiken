@@ -6,6 +6,7 @@ import { WeaponFactory } from "./Weapons";
 const canvas: HTMLCanvasElement = document.querySelector('#myCanvas')!;
 const ctx: CanvasRenderingContext2D = canvas.getContext('2d')!;
 const background = document.getElementById('background')!;
+const bulletCountNode = document.getElementById('bulletCount')!;
 background.style.width = window.innerWidth + 'px';
 background.style.height = window.innerHeight + 'px';
 canvas.style.border = '0'
@@ -28,34 +29,101 @@ const character = new Character({
 });
 const mainMap = new GameMap({ character });
 
+bulletCountNode.innerText = `${character.weapon.bulletCount}`;
+
+const moveIntervals: {
+  left: NodeJS.Timer | null
+  right: NodeJS.Timer | null
+  up: NodeJS.Timer | null
+  down: NodeJS.Timer | null
+} = {
+  left: null,
+  right: null,
+  up: null,
+  down: null
+}
+
 document.addEventListener('keydown', async (event) => {
+  if (event.repeat) {
+    return;
+  }
   switch (event.key) {
     case 'ArrowLeft':
-      character.move('left');
+      if (moveIntervals.left !== null) {
+        clearInterval(moveIntervals.left);
+      }
+      moveIntervals.left = setInterval(() => {
+        character.move('left');
+      }, 33)
       break;
     case 'ArrowRight':
-      character.move('right');
+      if (moveIntervals.right !== null) {
+        clearInterval(moveIntervals.right);
+      }
+      moveIntervals.right = setInterval(() => {
+        character.move('right');
+      }, 33)
       break;
     case 'ArrowUp':
-      character.move('up');
+      if (moveIntervals.up !== null) {
+        clearInterval(moveIntervals.up);
+      }
+      moveIntervals.up = setInterval(() => {
+        character.move('up');
+      }, 33)
       break;
     case 'ArrowDown':
-      character.move('down');
+      if (moveIntervals.down !== null) {
+        clearInterval(moveIntervals.down);
+      }
+      moveIntervals.down = setInterval(() => {
+        character.move('down');
+      }, 33)
       break;
   }
 
   if (event.key === 'x') {
-    const isMob = await character.attack(mainMap.mobs);
-    if (isMob) {
-      const [mob, mobIndex] = isMob;
-      mob.hp -= character.weapon.dmg;
-      if (mob.hp < 0) {
-        mainMap.killMob(mobIndex);
+    character.attack(mainMap.mobs).then(isMob => {
+      if (isMob) {
+        const [mob, mobIndex] = isMob;
+        mob.hp -= character.weapon.dmg;
+        if (mob.hp < 0) {
+          mainMap.killMob(mobIndex);
+          if (mob.drop.bullets) {
+            character.weapon.bulletCount += mob.drop.bullets;
+            bulletCountNode.innerText = `${character.weapon.bulletCount}`;
+          }
+        }
       }
-    }
+    })
+    bulletCountNode.innerText = `${character.weapon.bulletCount}`;
   }
 });
 
+document.addEventListener('keyup', function (event) {
+  switch (event.key) {
+    case 'ArrowLeft':
+      if (moveIntervals.left !== null) {
+        clearInterval(moveIntervals.left);
+      }
+      break;
+    case 'ArrowRight':
+      if (moveIntervals.right !== null) {
+        clearInterval(moveIntervals.right);
+      }
+      break;
+    case 'ArrowUp':
+      if (moveIntervals.up !== null) {
+        clearInterval(moveIntervals.up);
+      }
+      break;
+    case 'ArrowDown':
+      if (moveIntervals.down !== null) {
+        clearInterval(moveIntervals.down);
+      }
+      break;
+  }
+});
 
 let spawnTime = 3000;
 setInterval(() => {
@@ -63,12 +131,8 @@ setInterval(() => {
 }, 10000)
 
 setInterval(() => {
-  const fish = mobFactory.createRandom({
-    position: {
-      x: Math.floor(Math.random() * (1920 - 960 + 1)) + 960,
-      y: Math.floor(Math.random() * 1081)
-    },
+  const mob = mobFactory.createRandomWithRandomPosition({
     speed: 1,
   });
-  mainMap.spawnMob(fish);
+  mainMap.spawnMob(mob);
 }, spawnTime)

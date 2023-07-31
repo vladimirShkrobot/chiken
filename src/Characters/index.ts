@@ -1,5 +1,6 @@
 import { Mob } from "../Mobs";
-import { IWeapon } from "../Weapons/interface";
+import { WeaponFactory } from "../Weapons";
+import { IWeapon, Weapon } from "../Weapons/interface";
 import { IPosition } from "../interfaces";
 import { ICharacter, ICharacterCharacteristics, moveDirection } from "./interface";
 
@@ -9,7 +10,7 @@ const ctx: CanvasRenderingContext2D = canvas.getContext('2d')!;
 export class Character implements ICharacter {
   position: IPosition
   texture: HTMLImageElement
-  weapon: IWeapon
+  weapon: Weapon
   died: boolean
   private attacking: boolean
 
@@ -30,7 +31,7 @@ export class Character implements ICharacter {
     };
   }
 
-  drawWeapon(weapon: IWeapon) {
+  drawWeapon(weapon: Weapon) {
     this.weapon = weapon;
     this.takeWeapon();
     return weapon;
@@ -61,8 +62,8 @@ export class Character implements ICharacter {
     } else {
       return;
     }
-    ctx.drawImage(this.texture, this.position.x, this.position.y);
     this.weapon.position = { x: this.position.x + 50, y: this.position.y };
+    ctx.drawImage(this.texture, this.position.x, this.position.y);
     ctx.drawImage(this.weapon.texture, this.position.x + 50, this.position.y);
   }
 

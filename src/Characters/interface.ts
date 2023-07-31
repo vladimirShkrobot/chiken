@@ -1,5 +1,6 @@
 import { Mob } from "../Mobs";
-import { IWeapon } from "../Weapons/interface"
+import { WeaponFactory } from "../Weapons";
+import { IWeapon, Weapon } from "../Weapons/interface"
 import { IPosition } from "../interfaces"
 
 export type moveDirection = 'left' | 'right' | 'up' | 'down';
@@ -7,7 +8,7 @@ export type moveDirection = 'left' | 'right' | 'up' | 'down';
 export interface ICharacter {
   position: IPosition;
   texture: HTMLImageElement;
-  weapon: IWeapon;
+  weapon: Weapon
   died: boolean;
   drawWeapon(weapon: IWeapon): IWeapon;
   die(): void;
@@ -15,8 +16,8 @@ export interface ICharacter {
   attack(mobs: Mob[]): Promise<false | [Mob, number]>;
 }
 
-export interface ICharacterCharacteristics { 
+export interface ICharacterCharacteristics {
   position: IPosition;
   img: string;
-  weapon: IWeapon;
+  weapon: Weapon
 }
