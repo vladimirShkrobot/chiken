@@ -5,11 +5,15 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
-    "start": "tsc -w"
+    "start": "npx webpack --watch & explorer.exe index.html & code ."
   },
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "typescript": "^5.1.6"
+    "fork-ts-checker-webpack-plugin": "^8.0.0",
+    "ts-loader": "^9.4.4",
+    "typescript": "^5.1.6",
+    "webpack": "^5.88.2",
+    "webpack-cli": "^5.1.4"
   }
 }
