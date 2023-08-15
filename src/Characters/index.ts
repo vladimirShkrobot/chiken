@@ -67,11 +67,10 @@ export class Character implements ICharacter {
     ctx.drawImage(this.weapon.texture, this.position.x + 50, this.position.y);
   }
 
-  async attack(mobs: Mob[]): Promise<false | [Mob, number]> {
+  attack(mobs: Mob[]) {
     if (!this.died) {
-      return await this.weapon.attack(mobs);
+      return this.weapon.attack(mobs);
     }
-    return Promise.resolve(false);
   }
 
   changeWeapon(weapon: IWeapon) {

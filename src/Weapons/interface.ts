@@ -18,7 +18,13 @@ export interface IWeaponCharacteristicsWithPosition extends IWeaponCharacteristi
 export interface IWeapon extends IWeaponCharacteristics {
   texture: HTMLImageElement
   position: IPosition
-  attack: (mobs: Mob[]) => Promise<false | [Mob, number]>
+  attack: (mobs: Mob[]) => void | {
+    bullet: {
+      speed: number,
+      position: IPosition
+    },
+    result: Promise<false | [Mob, number]>
+  }
 }
 
 export interface IGun extends IWeapon {

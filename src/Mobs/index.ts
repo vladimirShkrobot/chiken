@@ -1,4 +1,3 @@
-import { Character } from "../Characters";
 import { IPosition } from "../interfaces";
 import { getRandomNumber } from "../utils";
 import { IMob, IMobCharacteristics } from "./interface";
@@ -34,7 +33,7 @@ export abstract class Mob implements IMob {
     this.died = true;
   }
 
-  move(enemy: Character) {
+  move<T extends { position: IPosition, die: Function }>(enemy: T) {
     const drawMob = () => {
       ctx.drawImage(this.texture, this.position.x, this.position.y);
     }

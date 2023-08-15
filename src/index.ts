@@ -2,6 +2,8 @@ import { Character } from "./Characters";
 import { GameMap } from "./Maps";
 import { MobFactory } from "./Mobs";
 import { WeaponFactory } from "./Weapons";
+import Observer from "./Observer";
+Observer
 
 const canvas: HTMLCanvasElement = document.querySelector('#myCanvas')!;
 const ctx: CanvasRenderingContext2D = canvas.getContext('2d')!;
@@ -18,6 +20,7 @@ canvas.height = window.innerHeight - 5;
 
 const weaponFactory = new WeaponFactory();
 const mobFactory = new MobFactory();
+
 const gun = weaponFactory.create({ type: 'Gun', range: 50, dmg: 17 });
 const character = new Character({
   img: './images/character.png',
@@ -83,7 +86,19 @@ document.addEventListener('keydown', async (event) => {
   }
 
   if (event.key === 'x') {
-    character.attack(mainMap.mobs).then(isMob => {
+    const attack = character.attack(mainMap.mobs);
+    if (!attack) {
+      return
+    }
+    let bulletDeregistration: null | Function = null;
+    if (attack.bullet) {
+      bulletDeregistration = mainMap.characterBulletRegistration(attack.bullet);
+    }
+
+    attack.result.then(isMob => {
+      if (bulletDeregistration) {
+        bulletDeregistration();
+      }
       if (isMob) {
         const [mob, mobIndex] = isMob;
         mob.hp -= character.weapon.dmg;
@@ -95,6 +110,7 @@ document.addEventListener('keydown', async (event) => {
           }
         }
       }
+
     })
     bulletCountNode.innerText = `${character.weapon.bulletCount}`;
   }
@@ -135,4 +151,5 @@ setInterval(() => {
     speed: 1,
   });
   mainMap.spawnMob(mob);
+  mob.move(character);
 }, spawnTime)

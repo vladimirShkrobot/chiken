@@ -13,7 +13,13 @@ export interface ICharacter {
   drawWeapon(weapon: IWeapon): IWeapon;
   die(): void;
   move(direction: moveDirection): void;
-  attack(mobs: Mob[]): Promise<false | [Mob, number]>;
+  attack(mobs: Mob[]): void | {
+    bullet: {
+      speed: number,
+      position: IPosition
+    },
+    result: Promise<false | [Mob, number]>
+  }
 }
 
 export interface ICharacterCharacteristics {

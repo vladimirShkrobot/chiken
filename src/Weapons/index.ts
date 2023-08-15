@@ -20,7 +20,13 @@ abstract class Weapon implements IWeapon {
     this.type = type;
   }
 
-  abstract attack(mobs: Mob[]): Promise<false | [Mob, number]>
+  abstract attack(mobs: Mob[]): void | {
+    bullet: {
+      speed: number,
+      position: IPosition
+    },
+    result: Promise<false | [Mob, number]>
+  }
 }
 
 // class Sword extends Weapon {
@@ -44,50 +50,63 @@ export class Gun extends Weapon implements IGun {
   }
 
   attack(mobs: Mob[]) {
-    return new Promise<false | [Mob, number]>(resolve => {
-      if (!this.bulletCount) {
-        return Promise.resolve(false);
-      }
-      let x = this.position.x + 150;
-      const y = this.position.y - 5;
-      const speed = 2;
+    const bullet = {
+      position: {
+        x: this.position.x + 150,
+        y: this.position.y - 5
+      },
+      speed: 2
+    }
 
-      const drawBall = () => {
-        // ctx.clearRect(x + speed - 50, y - 20, 40, 40);
-        // ctx.beginPath();
-        // ctx.arc(x, y, 20, 0, Math.PI * 2);
-        // ctx.fillStyle = 'blue';
-        // ctx.fill();
-        // ctx.closePath();
-        ctx.clearRect(x + speed - 50, y - 10, 40, 40);
-        ctx.drawImage(this.bullet.texture, x, y);
+    if (!this.bulletCount) {
+      return
+    }
 
-      }
+    return {
+      bullet,
+      result: new Promise<false | [Mob, number]>(resolve => {
+        // let x = this.position.x + 150;
+        // const y = this.position.y - 5;
+        // const speed = 2;
 
-      const animate = () => {
-        x += speed;
-        drawBall();
-        const damagedMobIndex = mobs.findIndex(({ position, texture }) => {
-          const halfOfMobWidth = texture.width / 2;
-          const halfOfMobHeight = texture.height / 2;
-          return (position.x - halfOfMobWidth < x && position.x + halfOfMobWidth > x) && (position.y - halfOfMobHeight < y && position.y + halfOfMobHeight + 40 > y);
-        })
-        if (damagedMobIndex > -1) {
-          ctx.clearRect(x + speed - 20, y, 60, 40);
-          return resolve([mobs[damagedMobIndex], damagedMobIndex]);
+        const drawBall = () => {
+          // ctx.clearRect(x + speed - 50, y - 20, 40, 40);
+          // ctx.beginPath();
+          // ctx.arc(x, y, 20, 0, Math.PI * 2);
+          // ctx.fillStyle = 'blue';
+          // ctx.fill();
+          // ctx.closePath();
+          ctx.clearRect(bullet.position.x + bullet.speed - 50, bullet.position.y - 10, 40, 40);
+          ctx.drawImage(this.bullet.texture, bullet.position.x, bullet.position.y);
+
         }
 
-        if (canvas.width > x || 0 > canvas.width) {
-          requestAnimationFrame(animate);
-        } else {
-          ctx.clearRect(x + speed - 40, y - 10, 40, 40);
-          return resolve(false);
-        }
-      }
+        const animate = () => {
+          bullet.position.x += bullet.speed;
+          drawBall();
+          const damagedMobIndex = mobs.findIndex(({ position, texture }) => {
+            const halfOfMobWidth = texture.width / 2;
+            const halfOfMobHeight = texture.height / 2;
+            return (position.x - halfOfMobWidth < bullet.position.x && position.x + halfOfMobWidth > bullet.position.x) && (position.y - halfOfMobHeight < bullet.position.y && position.y + halfOfMobHeight + 40 > bullet.position.y);
+          })
+          if (damagedMobIndex > -1) {
+            ctx.clearRect(bullet.position.x + bullet.speed - 20, bullet.position.y, 60, 40);
+            return resolve([mobs[damagedMobIndex], damagedMobIndex]);
+          }
 
-      animate();
-      this.bulletCount--;
-    })
+          if (canvas.width > bullet.position.x || 0 > canvas.width) {
+            requestAnimationFrame(animate);
+          } else {
+            ctx.clearRect(bullet.position.x + bullet.speed - 40, bullet.position.y - 10, 40, 40);
+            return resolve(false);
+          }
+        }
+
+        animate();
+        this.bulletCount--;
+      })
+    }
+
   }
 }
 
