@@ -1,155 +1,55 @@
 import { Character } from "./Characters";
+import InterfaceService from "./InterfaceService";
 import { GameMap } from "./Maps";
 import { MobFactory } from "./Mobs";
+import SoundService from "./SoundService";
 import { WeaponFactory } from "./Weapons";
-import Observer from "./Observer";
-Observer
+const startGameScreen = document.querySelector("#startGameScreen")!;
+const startGameButton = document.querySelector("#startGameButton")!;
 
-const canvas: HTMLCanvasElement = document.querySelector('#myCanvas')!;
-const ctx: CanvasRenderingContext2D = canvas.getContext('2d')!;
-const background = document.getElementById('background')!;
-const bulletCountNode = document.getElementById('bulletCount')!;
-background.style.width = window.innerWidth + 'px';
-background.style.height = window.innerHeight + 'px';
-canvas.style.border = '0'
-canvas.width = window.innerWidth - 5;
-canvas.height = window.innerHeight - 5;
-// ctx.fillStyle = 'gray';
-// ctx.fillRect(0, 0, canvas.width, canvas.height);
+function startGame() {
+  const gameMap = new GameMap();
 
+  const weaponFactory = new WeaponFactory();
+  const mobFactory = new MobFactory();
 
-const weaponFactory = new WeaponFactory();
-const mobFactory = new MobFactory();
+  const gun = weaponFactory.create(
+    { type: "Gun", range: 50, dmg: 17 },
+    gameMap
+  );
+  const character = new Character(
+    {
+      img: "./images/character.png",
+      position: {
+        x: gameMap.canvas.width / 2,
+        y: gameMap.canvas.height / 2,
+      },
+      weapon: gun,
+    },
+    gameMap
+  );
+  gameMap.spawnCharacter(character);
+  new InterfaceService(gameMap);
+  new SoundService(gameMap);
 
-const gun = weaponFactory.create({ type: 'Gun', range: 50, dmg: 17 });
-const character = new Character({
-  img: './images/character.png',
-  position: {
-    x: canvas.width / 2,
-    y: canvas.height / 2
-  },
-  weapon: gun
-});
-const mainMap = new GameMap({ character });
+  let spawnTime = 3000;
+  setInterval(() => {
+    spawnTime = spawnTime - spawnTime / 10;
+  }, 10000);
 
-bulletCountNode.innerText = `${character.weapon.bulletCount}`;
-
-const moveIntervals: {
-  left: NodeJS.Timer | null
-  right: NodeJS.Timer | null
-  up: NodeJS.Timer | null
-  down: NodeJS.Timer | null
-} = {
-  left: null,
-  right: null,
-  up: null,
-  down: null
+  setInterval(() => {
+    const mob = mobFactory.createRandomWithRandomPosition(
+      {
+        speed: 1,
+      },
+      gameMap
+    );
+    gameMap.spawnMob(mob);
+    mob.move(character);
+  }, spawnTime);
 }
 
-document.addEventListener('keydown', async (event) => {
-  if (event.repeat) {
-    return;
-  }
-  switch (event.key) {
-    case 'ArrowLeft':
-      if (moveIntervals.left !== null) {
-        clearInterval(moveIntervals.left);
-      }
-      moveIntervals.left = setInterval(() => {
-        character.move('left');
-      }, 33)
-      break;
-    case 'ArrowRight':
-      if (moveIntervals.right !== null) {
-        clearInterval(moveIntervals.right);
-      }
-      moveIntervals.right = setInterval(() => {
-        character.move('right');
-      }, 33)
-      break;
-    case 'ArrowUp':
-      if (moveIntervals.up !== null) {
-        clearInterval(moveIntervals.up);
-      }
-      moveIntervals.up = setInterval(() => {
-        character.move('up');
-      }, 33)
-      break;
-    case 'ArrowDown':
-      if (moveIntervals.down !== null) {
-        clearInterval(moveIntervals.down);
-      }
-      moveIntervals.down = setInterval(() => {
-        character.move('down');
-      }, 33)
-      break;
-  }
-
-  if (event.key === 'x') {
-    const attack = character.attack(mainMap.mobs);
-    if (!attack) {
-      return
-    }
-    let bulletDeregistration: null | Function = null;
-    if (attack.bullet) {
-      bulletDeregistration = mainMap.characterBulletRegistration(attack.bullet);
-    }
-
-    attack.result.then(isMob => {
-      if (bulletDeregistration) {
-        bulletDeregistration();
-      }
-      if (isMob) {
-        const [mob, mobIndex] = isMob;
-        mob.hp -= character.weapon.dmg;
-        if (mob.hp < 0) {
-          mainMap.killMob(mobIndex);
-          if (mob.drop.bullets) {
-            character.weapon.bulletCount += mob.drop.bullets;
-            bulletCountNode.innerText = `${character.weapon.bulletCount}`;
-          }
-        }
-      }
-
-    })
-    bulletCountNode.innerText = `${character.weapon.bulletCount}`;
-  }
+startGameButton.addEventListener("click", () => {
+  startGame();
+  startGameScreen.remove();
 });
-
-document.addEventListener('keyup', function (event) {
-  switch (event.key) {
-    case 'ArrowLeft':
-      if (moveIntervals.left !== null) {
-        clearInterval(moveIntervals.left);
-      }
-      break;
-    case 'ArrowRight':
-      if (moveIntervals.right !== null) {
-        clearInterval(moveIntervals.right);
-      }
-      break;
-    case 'ArrowUp':
-      if (moveIntervals.up !== null) {
-        clearInterval(moveIntervals.up);
-      }
-      break;
-    case 'ArrowDown':
-      if (moveIntervals.down !== null) {
-        clearInterval(moveIntervals.down);
-      }
-      break;
-  }
-});
-
-let spawnTime = 3000;
-setInterval(() => {
-  spawnTime = spawnTime - spawnTime / 10;
-}, 10000)
-
-setInterval(() => {
-  const mob = mobFactory.createRandomWithRandomPosition({
-    speed: 1,
-  });
-  mainMap.spawnMob(mob);
-  mob.move(character);
-}, spawnTime)

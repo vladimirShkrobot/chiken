@@ -1,3 +1,5 @@
+import { Action } from "./interface";
+
 type EventHandler = (...args: any[]) => void;
 
 export default class Observer {
@@ -11,14 +13,14 @@ export default class Observer {
     Observer.instance = this;
   }
 
-  on(eventName: string, handler: EventHandler) {
+  on(eventName: keyof typeof Action, handler: EventHandler) {
     if (!this.eventListeners[eventName]) {
       this.eventListeners[eventName] = [];
     }
     this.eventListeners[eventName].push(handler);
   }
 
-  off(eventName: string, handler: EventHandler) {
+  off(eventName: keyof typeof Action, handler: EventHandler) {
     if (this.eventListeners[eventName]) {
       this.eventListeners[eventName] = this.eventListeners[eventName].filter(
         h => h !== handler
@@ -26,7 +28,7 @@ export default class Observer {
     }
   }
 
-  fire(eventName: string, ...args: any[]) {
+  fire(eventName: keyof typeof Action, ...args: any[]) {
     const handlers = this.eventListeners[eventName];
     if (handlers) {
       for (const handler of handlers) {
